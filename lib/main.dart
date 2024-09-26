@@ -43,7 +43,7 @@ class MyHomePage extends StatelessWidget {
     return Scaffold(
       body: Column(
         children: [
-          Text('A random idea: TINDER BUT FOR FOOD <333333'),
+          Text('TINDER BUT FOR FOOD <333333'),
           Text(appState.current.asLowerCase),
           // ↓ Add this.
           ElevatedButton(
