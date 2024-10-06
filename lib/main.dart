@@ -39,7 +39,7 @@ class MyHomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
-    var pair = appState.current; 
+    //var pair = appState.current;
     return Scaffold(
       body: Column(
         children: [
