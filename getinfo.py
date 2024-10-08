@@ -1,3 +1,10 @@
+import sys
+
+# Suppress FutureWarnings
+
+source = sys.argv[1]
+#print(source)
+
 import requests
 from bs4 import BeautifulSoup
 import json
@@ -82,7 +89,7 @@ def extract_information(html):
 
 
     selected_tags = list(set(item.lower() for item in important_tags).intersection(item.lower() for item in tags))
-    print(selected_tags)
+    #print(selected_tags)
 
     formatted_selected_tags = ""
     for i in range(len(selected_tags)):
@@ -91,7 +98,7 @@ def extract_information(html):
         else:
             formatted_selected_tags = formatted_selected_tags + selected_tags[i] + "+"
     
-    print(formatted_selected_tags)
+    #print(formatted_selected_tags)
 
 
     search_results = fetch_page_source("https://tasty.co/search?q=" + formatted_selected_tags +  "&sort=popular")
@@ -103,10 +110,27 @@ def extract_information(html):
     if element:
         href_value = element['href']
         next_link = "https://tasty.co" + href_value
-        print("HERE" + next_link)
-    else:
-        print("Element not found")
+        #print("HERE" + next_link)
+    #else:
+        #print("Element not found")
 
+
+    import random
+    option1 = random.randint(1, len(important_tags))
+    option2 = random.randint(1, len(important_tags))
+    option3 = random.randint(1, len(important_tags))
+    rand_search_results = fetch_page_source("https://tasty.co/search?q=" + important_tags[option1] + "+"  + important_tags[option2] + "+" + important_tags[option3] +  "&sort=popular")
+    soup3 = BeautifulSoup(rand_search_results, 'html.parser')
+
+    element2 = soup3.select_one("#search-results-feed > div:nth-child(2) > section > ul > li:nth-child(1) > a")
+
+    # Print the text content of the found element
+    if element2:
+        href_value2 = element2['href']
+        rand_link = "https://tasty.co" + href_value2
+        #print("HERE" + next_link)
+    #else:
+        #print("Element not found")
 
     return {
         "link": link,
@@ -114,6 +138,8 @@ def extract_information(html):
         "short_description": short_description,
         "tags": tags,
         "video": video_link,
+        "next_link": next_link,
+        "rand_link": rand_link,
     }
 
     
@@ -152,18 +178,11 @@ if __name__ == "__main__":
         print("Failed to fetch the page")
 """
 
-target_url = "https://tasty.co/recipe/spooky-beef-stew"
-page_source = fetch_page_source(target_url)
+page_source = fetch_page_source(source)
 
 if page_source:
     extracted_info = extract_information(page_source)
-    
-    print("Extracted Information:")
-    print(f"Link: {extracted_info['link']}")
-    print(f"Title: {extracted_info['title']}")
-    print(f"Short Description: {extracted_info['short_description']}")
-    print(f"Tags: {extracted_info['tags']}")
-    print(f"Video: {extracted_info['video']}")
+    print(json.dumps(extracted_info))  # Always print as valid JSONNNNN
 else:
-    print("Failed to fetch the page")
+    print(json.dumps({"error": "Failed to fetch the page"}))
 
