@@ -2,7 +2,7 @@ import subprocess
 import json
 
 result = subprocess.run(
-    ['python', 'getinfo.py', 'https://tasty.co/recipe/blueberry-cream-muffins'],
+    ['python', 'getinfo.py', 'https://tasty.co/recipe/mozzarella-stuffed-turkey-meatloaf'],
     capture_output=True,  # Capture the output
     text=True 
 )

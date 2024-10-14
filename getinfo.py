@@ -115,6 +115,9 @@ def extract_information(html):
         #print("Element not found")
 
 
+    # to do 1) check video before returning, 2) implement non rabbit hole 
+
+
     import random
     option1 = random.randint(1, len(important_tags))
     option2 = random.randint(1, len(important_tags))
@@ -125,9 +128,8 @@ def extract_information(html):
     element2 = soup3.select_one("#search-results-feed > div:nth-child(2) > section > ul > li:nth-child(1) > a")
 
     # Print the text content of the found element
-    if element2:
-        href_value2 = element2['href']
-        rand_link = "https://tasty.co" + href_value2
+    href_value2 = element2['href']
+    rand_link = "https://tasty.co" + href_value2
         #print("HERE" + next_link)
     #else:
         #print("Element not found")
