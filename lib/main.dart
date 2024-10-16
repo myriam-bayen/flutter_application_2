@@ -1,9 +1,11 @@
 import 'package:english_words/english_words.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'dart:async';
 import 'package:http/http.dart' as http;
-import 'package:html/parser.dart'; // For parsing the HTML
+import 'package:html/parser.dart' show parse; // For parsing the HTML
 import 'dart:convert';
+import 'dart:math';
 
 void main() {
   runApp(MyApp());
@@ -31,15 +33,63 @@ class MyApp extends StatelessWidget {
 class MyAppState extends ChangeNotifier {
   var current = WordPair.random();
   String? pageTitle;
+  List<String> tags = [];
   String? description;
   String? videoLink;
   String? nextLink;
   String? randomLink;
+  String? prettyPrintTags;
+  List<String> selectedTags = [];
+  String? formattedSelectedTags;
+  List<String> importantTags = [
+    // Ingredients
+    'chicken', 'beef', 'pork', 'lamb', 'turkey', 'fish', 'shrimp', 'salmon',
+    'tuna',
+    'tofu', 'lentils', 'beans', 'chickpeas', 'tomatoes', 'potatoes',
+    'mushrooms',
+    'garlic', 'onion', 'carrots', 'bell peppers', 'spinach', 'kale', 'broccoli',
+    'cauliflower', 'pumpkin', 'zucchini', 'sweet potatoes', 'cheese', 'eggs',
+    'butter',
+    // Dish Types
+    'soup', 'stews', 'salad', 'pasta', 'sandwich', 'burger', 'pizza',
+    'casserole',
+    'stir-fry', 'curry', 'roast', 'grilled', 'baked', 'fried', 'braised',
+    'sautéed',
+    'slow-cooked', 'barbecue', 'sushi', 'tacos', 'wraps', 'quiche', 'pie',
+    'pastry',
+    'bread', 'pancakes', 'waffles', 'muffins', 'cake', 'cookies', 'vegetables',
+    // Cuisines
+    'italian', 'mexican', 'chinese', 'indian', 'french', 'japanese', 'thai',
+    'greek',
+    'mediterranean', 'middle eastern', 'korean', 'american', 'southern (u.s.)',
+    'vietnamese',
+    // Cooking Methods
+    'oven-baked', 'pan-fried', 'deep-fried', 'grilled', 'smoked', 'sous-vide',
+    'air-fried', 'roasted', 'pressure-cooked', 'boiled', 'poached', 'steamed',
+    'quick',
+    // Dietary Preferences
+    'vegetarian', 'vegan', 'gluten-free', 'dairy-free', 'low-carb', 'keto',
+    'paleo',
+    'whole30', 'pescatarian',
+    // Themes & Occasions
+    'halloween', 'christmas', 'thanksgiving', 'easter', 'summer', 'winter',
+    'comfort food', 'game day', 'potluck', 'kid-friendly', 'fall', 'spring',
+    'dinner',
+    'snack', 'jewish', 'comfort_food',
+    // Other Relevant Tags
+    'spicy', 'sweet', 'savory', 'tangy', 'crunchy', 'warm', 'cozy', 'cold',
+    'refreshing', 'drink'
+  ];
 
   // Fetch web content automatically on app start
   MyAppState() {
-    fetchPageSource(
-        'https://tasty.co/recipe/beauty-and-the-beast-inspired-french-bread-pizza');
+    _init();
+  }
+
+  Future<void> _init() async {
+    String result = await randVid(); // Await the result of randVid
+    print(result);
+    fetchPageSource(result); // Now you can pass the result
   }
 
   void getNext() {
@@ -73,7 +123,25 @@ class MyAppState extends ChangeNotifier {
           videoLink = videoMatch.group(1);
         }
       }
+      if (script.text.contains('window.BFADS =')) {
+        RegExp tagPattern = RegExp(r'"cms_tags":\s*\[(.*?)\]');
+        var match = tagPattern.firstMatch(script.text);
+        if (match != null) {
+          String tagString = match.group(1)!;
+          tags = tagString
+              .split(',')
+              .map((tag) => tag.trim().replaceAll('"', ''))
+              .toList();
+        }
+      }
     }
+
+    selectedTags =
+        tags.where((tag) => importantTags.contains(tag.toLowerCase())).toList();
+
+    // Format the selected tags
+    formattedSelectedTags = selectedTags.join('+');
+    prettyPrintTags = selectedTags.join(', ');
 
     nextLink = "https://example.com/next-link";
     randomLink = "https://example.com/random-link";
@@ -81,9 +149,40 @@ class MyAppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void randVid() {
-    // Logic for randVid button
-    print('Random Video Button Pressed');
+  Future<String> randVid() async {
+    String randLink = "https://tasty.co/search?q=" +
+        randIndex() +
+        "+" +
+        randIndex() +
+        "&sort=popular";
+    print("randLink:" + randLink);
+    var response = await http.get(Uri.parse(randLink));
+    if (response.statusCode == 200) {
+      var document = parse(response.body);
+
+      // Extract the link using the CSS selector
+      var element = document.querySelector("#search-results-feed li a");
+      // Check if the element is found and return the href value
+      if (element != null) {
+        String hrefValue = element.attributes['href'] ?? '';
+        String nextLink = "https://tasty.co" + hrefValue;
+        print("nextLink" + nextLink);
+        return nextLink;
+      } else {
+        print("No link found.");
+        randVid();
+        return "No link found.";
+      }
+    } else {
+      print("Failed to fetch the page.");
+      return "Failed to fetch the page.";
+    }
+  }
+
+  String randIndex() {
+    Random random = Random();
+    int randomIndex = random.nextInt(importantTags.length);
+    return importantTags[randomIndex];
   }
 
   void simVid() {
@@ -127,6 +226,8 @@ class MyHomePage extends StatelessWidget {
                 Text('Description: ${appState.description}'),
                 const SizedBox(height: 10),
                 Text('Video Link: ${appState.videoLink ?? "No video found"}'),
+                const SizedBox(height: 10),
+                Text('Tags: ${appState.prettyPrintTags ?? "no tags found"}'),
                 const SizedBox(height: 10),
                 Text('Next Link: ${appState.nextLink ?? "No next link found"}'),
                 const SizedBox(height: 10),
