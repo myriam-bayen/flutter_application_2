@@ -138,6 +138,7 @@ class MyAppState extends ChangeNotifier {
 
     selectedTags =
         tags.where((tag) => importantTags.contains(tag.toLowerCase())).toList();
+    print(selectedTags);
 
     // Format the selected tags
     formattedSelectedTags = selectedTags.join('+');
@@ -155,7 +156,7 @@ class MyAppState extends ChangeNotifier {
         "+" +
         randIndex() +
         "&sort=popular";
-    print("randLink:" + randLink);
+    //print("randLink:" + randLink);
     var response = await http.get(Uri.parse(randLink));
     if (response.statusCode == 200) {
       var document = parse(response.body);
@@ -166,7 +167,7 @@ class MyAppState extends ChangeNotifier {
       if (element != null) {
         String hrefValue = element.attributes['href'] ?? '';
         String nextLink = "https://tasty.co" + hrefValue;
-        print("nextLink" + nextLink);
+        print("nextLinkRandom: " + nextLink);
         return nextLink;
       } else {
         print("No link found.");
@@ -185,9 +186,53 @@ class MyAppState extends ChangeNotifier {
     return importantTags[randomIndex];
   }
 
-  void simVid() {
+  String randSim() {
+    Random random = Random();
+    int randomIndex = random.nextInt(selectedTags.length);
+    return selectedTags[randomIndex];
+  }
+
+  Future<String> simVid() async {
     // Logic for simVid button
-    print('Similar Video Button Pressed');
+    Random random = Random();
+    int randomIndex = random.nextInt(2);
+    String similarVid = "";
+    if (randomIndex == 1) {
+      similarVid = "https://tasty.co/search?q=" +
+          randSim() +
+          "+" +
+          randSim() +
+          "&sort=popular";
+      //print(simVid);
+    } else {
+      similarVid = "https://tasty.co/search?q=" +
+          randSim() +
+          "+" +
+          randIndex() +
+          "&sort=popular";
+      //print(simVid);
+    }
+    var response = await http.get(Uri.parse(similarVid));
+    if (response.statusCode == 200) {
+      var document = parse(response.body);
+
+      // Extract the link using the CSS selector
+      var element = document.querySelector("#search-results-feed li a");
+      // Check if the element is found and return the href value
+      if (element != null) {
+        String hrefValue = element.attributes['href'] ?? '';
+        String nextLink = "https://tasty.co" + hrefValue;
+        print("nextLinkSimilar: " + nextLink);
+        return nextLink;
+      } else {
+        print("No link found.");
+        randVid();
+        return "No link found.";
+      }
+    } else {
+      print("Failed to fetch the page.");
+      return "Failed to fetch the page.";
+    }
   }
 }
 
@@ -231,8 +276,6 @@ class MyHomePage extends StatelessWidget {
                 const SizedBox(height: 10),
                 Text('Next Link: ${appState.nextLink ?? "No next link found"}'),
                 const SizedBox(height: 10),
-                Text(
-                    'Random Link: ${appState.randomLink ?? "No random link found"}'),
               ]
             ],
           ),
