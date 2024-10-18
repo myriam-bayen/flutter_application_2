@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:html/parser.dart' show parse; // For parsing the HTML
 import 'dart:convert';
 import 'dart:math';
+import 'package:video_player/video_player.dart';
 
 void main() {
   runApp(MyApp());
@@ -101,6 +102,8 @@ class MyAppState extends ChangeNotifier {
     final response = await http.get(Uri.parse(url));
     if (response.statusCode == 200) {
       extractInformation(response.body);
+    } else {
+      print("Failed to fetch the page.");
     }
   }
 
@@ -138,15 +141,12 @@ class MyAppState extends ChangeNotifier {
 
     selectedTags =
         tags.where((tag) => importantTags.contains(tag.toLowerCase())).toList();
-    print(selectedTags);
 
     // Format the selected tags
     formattedSelectedTags = selectedTags.join('+');
     prettyPrintTags = selectedTags.join(', ');
 
-    nextLink = "https://example.com/next-link";
-    randomLink = "https://example.com/random-link";
-
+    // Ensure the UI updates
     notifyListeners();
   }
 
@@ -167,6 +167,7 @@ class MyAppState extends ChangeNotifier {
       if (element != null) {
         String hrefValue = element.attributes['href'] ?? '';
         String nextLink = "https://tasty.co" + hrefValue;
+        fetchPageSource(nextLink);
         print("nextLinkRandom: " + nextLink);
         return nextLink;
       } else {
@@ -202,15 +203,19 @@ class MyAppState extends ChangeNotifier {
           randSim() +
           "+" +
           randSim() +
+          "+" +
+          randSim() +
           "&sort=popular";
-      //print(simVid);
+      print(similarVid);
     } else {
       similarVid = "https://tasty.co/search?q=" +
           randSim() +
           "+" +
           randIndex() +
+          "+" +
+          randSim() +
           "&sort=popular";
-      //print(simVid);
+      print(similarVid);
     }
     var response = await http.get(Uri.parse(similarVid));
     if (response.statusCode == 200) {
@@ -223,6 +228,7 @@ class MyAppState extends ChangeNotifier {
         String hrefValue = element.attributes['href'] ?? '';
         String nextLink = "https://tasty.co" + hrefValue;
         print("nextLinkSimilar: " + nextLink);
+        fetchPageSource(nextLink);
         return nextLink;
       } else {
         print("No link found.");
@@ -251,15 +257,15 @@ class MyHomePage extends StatelessWidget {
             children: [
               const SizedBox(height: 20),
               ElevatedButton(
-                onPressed: () {
-                  appState.randVid(); // Call randVid function
+                onPressed: () async {
+                  await appState.randVid(); // Ensure it's awaited
                 },
                 child: Text('Random Video'),
               ),
               const SizedBox(height: 20),
               ElevatedButton(
-                onPressed: () {
-                  appState.simVid(); // Call simVid function
+                onPressed: () async {
+                  await appState.simVid(); // Ensure it's awaited
                 },
                 child: Text('Similar Video'),
               ),
@@ -273,8 +279,6 @@ class MyHomePage extends StatelessWidget {
                 Text('Video Link: ${appState.videoLink ?? "No video found"}'),
                 const SizedBox(height: 10),
                 Text('Tags: ${appState.prettyPrintTags ?? "no tags found"}'),
-                const SizedBox(height: 10),
-                Text('Next Link: ${appState.nextLink ?? "No next link found"}'),
                 const SizedBox(height: 10),
               ]
             ],
