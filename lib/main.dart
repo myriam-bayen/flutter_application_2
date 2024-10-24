@@ -225,7 +225,7 @@ class MyAppState extends ChangeNotifier {
         return nextLink;
       } else {
         print("No link found.");
-        randVid();
+        simVid();
         return "No link found.";
       }
     } else {
@@ -238,7 +238,9 @@ class MyAppState extends ChangeNotifier {
 // Video Player Section
 
 class VideoPlayerScreen extends StatefulWidget {
-  const VideoPlayerScreen({super.key});
+  final String videoUrl;
+
+  const VideoPlayerScreen({super.key, required this.videoUrl});
 
   @override
   State<VideoPlayerScreen> createState() => _VideoPlayerScreenState();
@@ -252,9 +254,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   void initState() {
     super.initState();
     _controller = VideoPlayerController.networkUrl(
-      Uri.parse(
-        'https://flutter.github.io/assets-for-api-docs/assets/videos/butterfly.mp4',
-      ),
+      Uri.parse(widget.videoUrl), // Use the passed videoUrl here
     );
     _initializeVideoPlayerFuture = _controller.initialize();
     _controller.setLooping(true);
@@ -270,7 +270,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Butterfly Video'),
+        title: const Text('Video Player'),
       ),
       body: FutureBuilder(
         future: _initializeVideoPlayerFuture,
@@ -320,7 +320,9 @@ class MyHomePage extends StatelessWidget {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => VideoPlayerScreen()),
+                MaterialPageRoute(
+                    builder: (context) => VideoPlayerScreen(
+                        videoUrl: appState.videoLink ?? "some error :(")),
               );
             },
           ),
@@ -337,12 +339,17 @@ class MyHomePage extends StatelessWidget {
               if (appState.videoLink != null) ...[
                 ElevatedButton(
                   onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => VideoPlayerScreen(),
-                      ),
-                    );
+                    if (appState.videoLink != null) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              VideoPlayerScreen(videoUrl: appState.videoLink!),
+                        ),
+                      );
+                    } else {
+                      print("No video link available");
+                    }
                   },
                   child: Text('Play Video'),
                 ),
