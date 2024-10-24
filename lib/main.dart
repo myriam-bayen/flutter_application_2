@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
 import 'package:http/http.dart' as http;
-import 'package:html/parser.dart' show parse; // For parsing the HTML
+import 'package:html/parser.dart' show parse;
 import 'dart:convert';
 import 'dart:math';
 import 'package:video_player/video_player.dart';
@@ -45,38 +45,31 @@ class MyAppState extends ChangeNotifier {
   List<String> importantTags = [
     // Ingredients
     'chicken', 'beef', 'pork', 'lamb', 'turkey', 'fish', 'shrimp', 'salmon',
-    'tuna',
-    'tofu', 'lentils', 'beans', 'chickpeas', 'tomatoes', 'potatoes',
-    'mushrooms',
-    'garlic', 'onion', 'carrots', 'bell peppers', 'spinach', 'kale', 'broccoli',
-    'cauliflower', 'pumpkin', 'zucchini', 'sweet potatoes', 'cheese', 'eggs',
-    'butter',
+    'tuna', 'tofu', 'lentils', 'beans', 'chickpeas', 'tomatoes', 'potatoes',
+    'mushrooms', 'garlic', 'onion', 'carrots', 'bell peppers', 'spinach',
+    'kale', 'broccoli', 'cauliflower', 'pumpkin', 'zucchini', 'sweet potatoes',
+    'cheese', 'eggs', 'butter',
     // Dish Types
     'soup', 'stews', 'salad', 'pasta', 'sandwich', 'burger', 'pizza',
-    'casserole',
-    'stir-fry', 'curry', 'roast', 'grilled', 'baked', 'fried', 'braised',
-    'sautéed',
-    'slow-cooked', 'barbecue', 'sushi', 'tacos', 'wraps', 'quiche', 'pie',
-    'pastry',
-    'bread', 'pancakes', 'waffles', 'muffins', 'cake', 'cookies', 'vegetables',
+    'casserole', 'stir-fry', 'curry', 'roast', 'grilled', 'baked', 'fried',
+    'braised', 'sautéed', 'slow-cooked', 'barbecue', 'sushi', 'tacos', 'wraps',
+    'quiche', 'pie', 'pastry', 'bread', 'pancakes', 'waffles', 'muffins',
+    'cake', 'cookies', 'vegetables',
     // Cuisines
     'italian', 'mexican', 'chinese', 'indian', 'french', 'japanese', 'thai',
-    'greek',
-    'mediterranean', 'middle eastern', 'korean', 'american', 'southern (u.s.)',
-    'vietnamese',
+    'greek', 'mediterranean', 'middle eastern', 'korean', 'american',
+    'southern (u.s.)', 'vietnamese',
     // Cooking Methods
     'oven-baked', 'pan-fried', 'deep-fried', 'grilled', 'smoked', 'sous-vide',
     'air-fried', 'roasted', 'pressure-cooked', 'boiled', 'poached', 'steamed',
     'quick',
     // Dietary Preferences
     'vegetarian', 'vegan', 'gluten-free', 'dairy-free', 'low-carb', 'keto',
-    'paleo',
-    'whole30', 'pescatarian',
+    'paleo', 'whole30', 'pescatarian',
     // Themes & Occasions
     'halloween', 'christmas', 'thanksgiving', 'easter', 'summer', 'winter',
     'comfort food', 'game day', 'potluck', 'kid-friendly', 'fall', 'spring',
-    'dinner',
-    'snack', 'jewish', 'comfort_food',
+    'dinner', 'snack', 'jewish', 'comfort_food',
     // Other Relevant Tags
     'spicy', 'sweet', 'savory', 'tangy', 'crunchy', 'warm', 'cozy', 'cold',
     'refreshing', 'drink'
@@ -242,47 +235,132 @@ class MyAppState extends ChangeNotifier {
   }
 }
 
+// Video Player Section
+
+class VideoPlayerScreen extends StatefulWidget {
+  const VideoPlayerScreen({super.key});
+
+  @override
+  State<VideoPlayerScreen> createState() => _VideoPlayerScreenState();
+}
+
+class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
+  late VideoPlayerController _controller;
+  late Future<void> _initializeVideoPlayerFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = VideoPlayerController.networkUrl(
+      Uri.parse(
+        'https://flutter.github.io/assets-for-api-docs/assets/videos/butterfly.mp4',
+      ),
+    );
+    _initializeVideoPlayerFuture = _controller.initialize();
+    _controller.setLooping(true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Butterfly Video'),
+      ),
+      body: FutureBuilder(
+        future: _initializeVideoPlayerFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.done) {
+            return AspectRatio(
+              aspectRatio: _controller.value.aspectRatio,
+              child: VideoPlayer(_controller),
+            );
+          } else {
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
+          }
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          setState(() {
+            if (_controller.value.isPlaying) {
+              _controller.pause();
+            } else {
+              _controller.play();
+            }
+          });
+        },
+        child: Icon(
+          _controller.value.isPlaying ? Icons.pause : Icons.play_arrow,
+        ),
+      ),
+    );
+  }
+}
+
 class MyHomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
+    var pair = appState.current;
 
     return Scaffold(
-      appBar: AppBar(title: Text('Tinder but for Food')),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () async {
-                  await appState.randVid(); // Ensure it's awaited
-                },
-                child: Text('Random Video'),
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () async {
-                  await appState.simVid(); // Ensure it's awaited
-                },
-                child: Text('Similar Video'),
-              ),
-              const SizedBox(height: 20),
-              if (appState.pageTitle != null) ...[
-                Text('Fetched Title: ${appState.pageTitle}',
-                    style: TextStyle(fontWeight: FontWeight.bold)),
-                const SizedBox(height: 10),
-                Text('Description: ${appState.description}'),
-                const SizedBox(height: 10),
-                Text('Video Link: ${appState.videoLink ?? "No video found"}'),
-                const SizedBox(height: 10),
-                Text('Tags: ${appState.prettyPrintTags ?? "no tags found"}'),
-                const SizedBox(height: 10),
-              ]
-            ],
+      appBar: AppBar(
+        title: Text('tinder for food'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.video_collection),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => VideoPlayerScreen()),
+              );
+            },
           ),
+        ],
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            if (appState.pageTitle != null) ...[
+              Text(appState.pageTitle ?? ''),
+              Text(appState.description ?? ''),
+              Text(appState.prettyPrintTags ?? ''),
+              if (appState.videoLink != null) ...[
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => VideoPlayerScreen(),
+                      ),
+                    );
+                  },
+                  child: Text('Play Video'),
+                ),
+              ],
+            ],
+            ElevatedButton(
+              onPressed: () {
+                appState.simVid();
+              },
+              child: Text('Next Sim Vid'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                appState.randVid();
+              },
+              child: Text('Next Rand Vid'),
+            ),
+          ],
         ),
       ),
     );
