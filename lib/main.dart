@@ -41,6 +41,7 @@ class MyAppState extends ChangeNotifier {
   String? randomLink;
   String? prettyPrintTags;
   List<String> selectedTags = [];
+  List<String?> watched_vids = [];
   String? formattedSelectedTags;
   List<String> importantTags = [
     // Ingredients
@@ -92,6 +93,11 @@ class MyAppState extends ChangeNotifier {
   }
 
   Future<void> fetchPageSource(String url) async {
+    watched_vids.add(url);
+    print("watched videos!");
+    for (var i = 0; i < watched_vids.length; i++) {
+      print(watched_vids[i]);
+    }
     final response = await http.get(Uri.parse(url));
     if (response.statusCode == 200) {
       extractInformation(response.body);
@@ -160,6 +166,11 @@ class MyAppState extends ChangeNotifier {
       if (element != null) {
         String hrefValue = element.attributes['href'] ?? '';
         String nextLink = "https://tasty.co" + hrefValue;
+        for (var i = 0; i < watched_vids.length; i++) {
+          if (watched_vids[i] == nextLink) {
+            randVid();
+          }
+        }
         fetchPageSource(nextLink);
         print("nextLinkRandom: " + nextLink);
         return nextLink;
@@ -183,6 +194,7 @@ class MyAppState extends ChangeNotifier {
   String randSim() {
     Random random = Random();
     int randomIndex = random.nextInt(selectedTags.length);
+    selectedTags.remove(randomIndex);
     return selectedTags[randomIndex];
   }
 
@@ -221,6 +233,11 @@ class MyAppState extends ChangeNotifier {
         String hrefValue = element.attributes['href'] ?? '';
         String nextLink = "https://tasty.co" + hrefValue;
         print("nextLinkSimilar: " + nextLink);
+        for (var i = 0; i < watched_vids.length; i++) {
+          if (watched_vids[i] == nextLink) {
+            simVid();
+          }
+        }
         fetchPageSource(nextLink);
         return nextLink;
       } else {
@@ -305,69 +322,133 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   }
 }
 
-class MyHomePage extends StatelessWidget {
+class MyHomePage extends StatefulWidget {
+  @override
+  _MyHomePageState createState() => _MyHomePageState();
+}
+
+class _MyHomePageState extends State<MyHomePage> {
+  VideoPlayerController? _controller;
+  Future<void>? _initializeVideoPlayerFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeVideo();
+  }
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    super.dispose();
+  }
+
+  void _initializeVideo() {
+    final appState = context.read<MyAppState>();
+
+    // Check if there is a video link before initializing
+    if (appState.videoLink != null && appState.videoLink!.isNotEmpty) {
+      print(
+          "Initializing video with URL: ${appState.videoLink}"); // Debug statement
+      _controller = VideoPlayerController.network(appState.videoLink!)
+        ..setLooping(true);
+      _initializeVideoPlayerFuture = _controller!.initialize();
+    }
+  }
+
+  void _updateVideo() {
+    final appState = context.watch<MyAppState>();
+
+    if (_controller?.dataSource != appState.videoLink) {
+      setState(() {
+        _controller?.dispose(); // Dispose of the previous controller
+        _initializeVideo(); // Reinitialize with the new link
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    _updateVideo(); // Call this method to update the video link
+
     var appState = context.watch<MyAppState>();
-    var pair = appState.current;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('tinder for food'),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.video_collection),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) => VideoPlayerScreen(
-                        videoUrl: appState.videoLink ?? "some error :(")),
-              );
-            },
-          ),
-        ],
+        title: Text('Tinder for Food'),
       ),
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            if (appState.pageTitle != null) ...[
-              Text(appState.pageTitle ?? ''),
-              Text(appState.description ?? ''),
-              Text(appState.prettyPrintTags ?? ''),
-              if (appState.videoLink != null) ...[
-                ElevatedButton(
-                  onPressed: () {
-                    if (appState.videoLink != null) {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              VideoPlayerScreen(videoUrl: appState.videoLink!),
-                        ),
-                      );
-                    } else {
-                      print("No video link available");
-                    }
-                  },
-                  child: Text('Play Video'),
+        child: SingleChildScrollView(
+          // Wrap the Column with SingleChildScrollView
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              if (appState.pageTitle != null) ...[
+                Text(
+                  appState.pageTitle!,
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Text(
+                    appState.description ?? '',
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                Text(
+                  appState.prettyPrintTags ?? '',
+                  textAlign: TextAlign.center,
                 ),
               ],
+              if (_initializeVideoPlayerFuture != null) ...[
+                FutureBuilder(
+                  future: _initializeVideoPlayerFuture,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.done) {
+                      return AspectRatio(
+                        aspectRatio: _controller!.value.aspectRatio,
+                        child: VideoPlayer(_controller!),
+                      );
+                    } else {
+                      return CircularProgressIndicator();
+                    }
+                  },
+                ),
+                FloatingActionButton(
+                  onPressed: () {
+                    setState(() {
+                      if (_controller!.value.isPlaying) {
+                        _controller!.pause();
+                      } else {
+                        _controller!.play();
+                      }
+                    });
+                  },
+                  child: Icon(
+                    _controller!.value.isPlaying
+                        ? Icons.pause
+                        : Icons.play_arrow,
+                  ),
+                ),
+              ],
+              SizedBox(height: 16), // Add some spacing
+              ElevatedButton(
+                onPressed: () async {
+                  await appState.simVid();
+                  _updateVideo();
+                },
+                child: Text('Next Sim Vid'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  await appState.randVid();
+                  _updateVideo();
+                },
+                child: Text('Next Rand Vid'),
+              ),
             ],
-            ElevatedButton(
-              onPressed: () {
-                appState.simVid();
-              },
-              child: Text('Next Sim Vid'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                appState.randVid();
-              },
-              child: Text('Next Rand Vid'),
-            ),
-          ],
+          ),
         ),
       ),
     );
