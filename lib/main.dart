@@ -253,31 +253,28 @@ class MyAppState extends ChangeNotifier {
 }
 
 // Video Player Section
-class VideoScreen extends StatefulWidget {
-  final String videoUrl;
-  final String title;
-  final String description;
 
-  VideoScreen({
-    required this.videoUrl,
-    required this.title,
-    required this.description,
-  });
+class VideoPlayerScreen extends StatefulWidget {
+  final String videoUrl;
+
+  const VideoPlayerScreen({super.key, required this.videoUrl});
 
   @override
-  _VideoScreenState createState() => _VideoScreenState();
+  State<VideoPlayerScreen> createState() => _VideoPlayerScreenState();
 }
 
-class _VideoScreenState extends State<VideoScreen> {
+class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   late VideoPlayerController _controller;
+  late Future<void> _initializeVideoPlayerFuture;
 
   @override
   void initState() {
     super.initState();
-    _controller = VideoPlayerController.network(widget.videoUrl)
-      ..initialize().then((_) {
-        setState(() {}); // Ensure the first frame is shown
-      });
+    _controller = VideoPlayerController.networkUrl(
+      Uri.parse(widget.videoUrl), // Use the passed videoUrl here
+    );
+    _initializeVideoPlayerFuture = _controller.initialize();
+    _controller.setLooping(true);
   }
 
   @override
@@ -286,56 +283,40 @@ class _VideoScreenState extends State<VideoScreen> {
     super.dispose();
   }
 
-  void _togglePlayPause() {
-    setState(() {
-      _controller.value.isPlaying ? _controller.pause() : _controller.play();
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
-      body: Stack(
-        children: [
-          GestureDetector(
-            onTap: _togglePlayPause,
-            child: Center(
-              child: _controller.value.isInitialized
-                  ? AspectRatio(
-                      aspectRatio: _controller.value.aspectRatio,
-                      child: VideoPlayer(_controller),
-                    )
-                  : CircularProgressIndicator(),
-            ),
-          ),
-          Positioned(
-            top: 50,
-            left: 16,
-            right: 16,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  widget.title,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                SizedBox(height: 8),
-                Text(
-                  widget.description,
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 16,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+      appBar: AppBar(
+        title: const Text('Video Player'),
+      ),
+      body: FutureBuilder(
+        future: _initializeVideoPlayerFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.done) {
+            return AspectRatio(
+              aspectRatio: _controller.value.aspectRatio,
+              child: VideoPlayer(_controller),
+            );
+          } else {
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
+          }
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          setState(() {
+            if (_controller.value.isPlaying) {
+              _controller.pause();
+            } else {
+              _controller.play();
+            }
+          });
+        },
+        child: Icon(
+          _controller.value.isPlaying ? Icons.pause : Icons.play_arrow,
+        ),
       ),
     );
   }
@@ -353,7 +334,10 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
-    _initializeVideo();
+    // Initialize video after the widget is fully built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeVideo();
+    });
   }
 
   @override
@@ -363,33 +347,37 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void _initializeVideo() {
-    final appState = context.read<MyAppState>();
+    if (!mounted) return;
 
-    // Check if there is a video link before initializing
+    final appState = Provider.of<MyAppState>(context, listen: false);
     if (appState.videoLink != null && appState.videoLink!.isNotEmpty) {
-      print(
-          "Initializing video with URL: ${appState.videoLink}"); // Debug statement
-      _controller = VideoPlayerController.network(appState.videoLink!)
-        ..setLooping(true);
-      _initializeVideoPlayerFuture = _controller!.initialize();
-    }
-  }
-
-  void _updateVideo() {
-    final appState = context.watch<MyAppState>();
-
-    if (_controller?.dataSource != appState.videoLink) {
       setState(() {
-        _controller?.dispose(); // Dispose of the previous controller
-        _initializeVideo(); // Reinitialize with the new link
+        _controller?.dispose();
+        _controller = VideoPlayerController.network(appState.videoLink!)
+          ..setLooping(true);
+        _initializeVideoPlayerFuture = _controller!.initialize();
       });
     }
   }
 
+  Future<void> _handleNextSimVid() async {
+    if (!mounted) return;
+
+    final appState = Provider.of<MyAppState>(context, listen: false);
+    await appState.simVid();
+    _initializeVideo();
+  }
+
+  Future<void> _handleNextRandVid() async {
+    if (!mounted) return;
+
+    final appState = Provider.of<MyAppState>(context, listen: false);
+    await appState.randVid();
+    _initializeVideo();
+  }
+
   @override
   Widget build(BuildContext context) {
-    _updateVideo(); // Call this method to update the video link
-
     var appState = context.watch<MyAppState>();
 
     return Scaffold(
@@ -398,7 +386,6 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       body: Center(
         child: SingleChildScrollView(
-          // Wrap the Column with SingleChildScrollView
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
@@ -420,20 +407,16 @@ class _MyHomePageState extends State<MyHomePage> {
                   textAlign: TextAlign.center,
                 ),
               ],
+              SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _handleNextSimVid,
+                child: Text('Next Sim Vid'),
+              ),
+              ElevatedButton(
+                onPressed: _handleNextRandVid,
+                child: Text('Next Rand Vid'),
+              ),
               if (_initializeVideoPlayerFuture != null) ...[
-                FutureBuilder(
-                  future: _initializeVideoPlayerFuture,
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.done) {
-                      return AspectRatio(
-                        aspectRatio: _controller!.value.aspectRatio,
-                        child: VideoPlayer(_controller!),
-                      );
-                    } else {
-                      return CircularProgressIndicator();
-                    }
-                  },
-                ),
                 FloatingActionButton(
                   onPressed: () {
                     setState(() {
@@ -450,22 +433,20 @@ class _MyHomePageState extends State<MyHomePage> {
                         : Icons.play_arrow,
                   ),
                 ),
+                FutureBuilder(
+                  future: _initializeVideoPlayerFuture,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.done) {
+                      return AspectRatio(
+                        aspectRatio: _controller!.value.aspectRatio,
+                        child: VideoPlayer(_controller!),
+                      );
+                    } else {
+                      return CircularProgressIndicator();
+                    }
+                  },
+                ),
               ],
-              SizedBox(height: 16), // Add some spacing
-              ElevatedButton(
-                onPressed: () async {
-                  await appState.simVid();
-                  _updateVideo();
-                },
-                child: Text('Next Sim Vid'),
-              ),
-              ElevatedButton(
-                onPressed: () async {
-                  await appState.randVid();
-                  _updateVideo();
-                },
-                child: Text('Next Rand Vid'),
-              ),
             ],
           ),
         ),
