@@ -370,7 +370,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    _updateVideo(); // Call this method to update the video link
+    _updateVideo();
 
     var appState = context.watch<MyAppState>();
 
@@ -378,73 +378,66 @@ class _MyHomePageState extends State<MyHomePage> {
       appBar: AppBar(
         title: Text('Tinder for Food'),
       ),
-      body: Center(
-        child: SingleChildScrollView(
-          // Wrap the Column with SingleChildScrollView
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              if (appState.pageTitle != null) ...[
-                Text(
-                  appState.pageTitle!,
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  textAlign: TextAlign.center,
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                ),
-              ],
-              if (_initializeVideoPlayerFuture != null) ...[
-                FutureBuilder(
-                  future: _initializeVideoPlayerFuture,
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.done) {
-                      return AspectRatio(
-                        aspectRatio: _controller!.value.aspectRatio,
-                        child: VideoPlayer(_controller!),
-                      );
-                    } else {
-                      return CircularProgressIndicator();
-                    }
-                  },
-                ),
-                FloatingActionButton(
-                  onPressed: () {
-                    setState(() {
-                      if (_controller!.value.isPlaying) {
-                        _controller!.pause();
-                      } else {
-                        _controller!.play();
-                      }
-                    });
-                  },
-                  child: Icon(
-                    _controller!.value.isPlaying
-                        ? Icons.pause
-                        : Icons.play_arrow,
+      body: GestureDetector(
+        onHorizontalDragEnd: (details) {
+          if (details.velocity.pixelsPerSecond.dx > 0) {
+            // Swiped right
+            context.read<MyAppState>().simVid();
+          } else {
+            // Swiped left
+            context.read<MyAppState>().randVid();
+          }
+          _updateVideo();
+        },
+        child: Center(
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                if (appState.pageTitle != null) ...[
+                  Text(
+                    appState.pageTitle!,
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    textAlign: TextAlign.center,
                   ),
-                ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  ),
+                ],
+                if (_initializeVideoPlayerFuture != null) ...[
+                  FutureBuilder(
+                    future: _initializeVideoPlayerFuture,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.done) {
+                        return AspectRatio(
+                          aspectRatio: _controller!.value.aspectRatio,
+                          child: VideoPlayer(_controller!),
+                        );
+                      } else {
+                        return CircularProgressIndicator();
+                      }
+                    },
+                  ),
+                  FloatingActionButton(
+                    onPressed: () {
+                      setState(() {
+                        if (_controller!.value.isPlaying) {
+                          _controller!.pause();
+                        } else {
+                          _controller!.play();
+                        }
+                      });
+                    },
+                    child: Icon(
+                      _controller!.value.isPlaying
+                          ? Icons.pause
+                          : Icons.play_arrow,
+                    ),
+                  ),
+                ],
+                SizedBox(height: 16),
               ],
-              SizedBox(height: 16), // Add some spacing
-              ElevatedButton(
-                onPressed: () async {
-                  await context
-                      .read<MyAppState>()
-                      .simVid(); // Use read instead of watch
-                  _updateVideo();
-                },
-                child: Text('Next Sim Vid'),
-              ),
-              ElevatedButton(
-                onPressed: () async {
-                  await context
-                      .read<MyAppState>()
-                      .randVid(); // Use read instead of watch
-                  _updateVideo();
-                },
-                child: Text('Next Rand Vid'),
-              ),
-            ],
+            ),
           ),
         ),
       ),
