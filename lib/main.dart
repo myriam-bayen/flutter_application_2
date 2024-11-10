@@ -393,10 +393,6 @@ class _MyHomePageState extends State<MyHomePage> {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 ),
-                Text(
-                  appState.prettyPrintTags ?? '',
-                  textAlign: TextAlign.center,
-                ),
               ],
               if (_initializeVideoPlayerFuture != null) ...[
                 FutureBuilder(
