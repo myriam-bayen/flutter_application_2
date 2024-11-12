@@ -1,5 +1,6 @@
 import 'package:english_words/english_words.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_application_2/saved.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
 import 'package:http/http.dart' as http;
@@ -435,6 +436,16 @@ class _MyHomePageState extends State<MyHomePage> {
                     ),
                   ),
                 ],
+                ElevatedButton(
+                  child: const Text('Open route'),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const SavedPage()),
+                    );
+                  },
+                ),
                 SizedBox(height: 16),
               ],
             ),
