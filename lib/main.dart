@@ -439,10 +439,10 @@ class _MyHomePageState extends State<MyHomePage> {
                 ],
                 SizedBox(height: 16),
                 new Container(
-                  child: new Row(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: <Widget>[
                       ElevatedButton(
-                        child: const Text('Open route'),
                         onPressed: () {
                           Navigator.push(
                             context,
@@ -450,9 +450,14 @@ class _MyHomePageState extends State<MyHomePage> {
                                 builder: (context) => const SavedPage()),
                           );
                         },
+                        child: Image.asset(
+                          'assets/search.png', // Path to your image
+                          width: 24, // Set the width of the image
+                          height: 24, // Set the height of the image
+                        ),
                       ),
+                      SizedBox(width: 16), // Add space between buttons
                       ElevatedButton(
-                        child: const Text('Open route'),
                         onPressed: () {
                           Navigator.push(
                             context,
@@ -460,6 +465,8 @@ class _MyHomePageState extends State<MyHomePage> {
                                 builder: (context) => const SearchPage()),
                           );
                         },
+                        child: const Text(
+                            'Open route'), // Keep text for this button
                       ),
                     ],
                   ),
