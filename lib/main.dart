@@ -377,8 +377,13 @@ class _MyHomePageState extends State<MyHomePage> {
     var appState = context.watch<MyAppState>();
 
     return Scaffold(
+      backgroundColor: Color.fromARGB(255, 232, 202, 195),
       appBar: AppBar(
-        title: Text('Tinder for Food'),
+        title: Image.asset(
+          'assets/tinder.png', // Path to your image
+          width: 350, // Set the width of the image
+          height: 88, // Set the height of the image
+        ),
       ),
       body: GestureDetector(
         onHorizontalDragEnd: (details) {
@@ -447,7 +452,7 @@ class _MyHomePageState extends State<MyHomePage> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                                builder: (context) => const SavedPage()),
+                                builder: (context) => const SearchPage()),
                           );
                         },
                         child: Image.asset(
@@ -462,11 +467,14 @@ class _MyHomePageState extends State<MyHomePage> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                                builder: (context) => const SearchPage()),
+                                builder: (context) => const SavedPage()),
                           );
                         },
-                        child: const Text(
-                            'Open route'), // Keep text for this button
+                        child: Image.asset(
+                          'assets/savedlogo.png', // Path to your image
+                          width: 24, // Set the width of the image
+                          height: 24, // Set the height of the image
+                        ), // Keep text for this button
                       ),
                     ],
                   ),
