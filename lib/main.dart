@@ -42,8 +42,10 @@ class MyAppState extends ChangeNotifier {
   String? nextLink;
   String? randomLink;
   String? prettyPrintTags;
+  String? currentLink;
   List<String> selectedTags = [];
   List<String?> watched_vids = [];
+  List<String?> liked_vids = [];
   String? formattedSelectedTags;
   List<String> importantTags = [
     // Ingredients
@@ -89,6 +91,14 @@ class MyAppState extends ChangeNotifier {
     fetchPageSource(result); // Now you can pass the result
   }
 
+  void addLikedVid() {
+    print("video link");
+    liked_vids.add(currentLink);
+    print("end liked vids");
+
+    notifyListeners(); // Notify listeners to update the UI
+  }
+
   void getNext() {
     current = WordPair.random();
     notifyListeners();
@@ -96,6 +106,7 @@ class MyAppState extends ChangeNotifier {
 
   Future<void> fetchPageSource(String url) async {
     watched_vids.add(url);
+    currentLink = url;
     print("watched videos!");
     for (var i = 0; i < watched_vids.length; i++) {
       print(watched_vids[i]);
@@ -386,12 +397,21 @@ class _MyHomePageState extends State<MyHomePage> {
         ),
       ),
       body: GestureDetector(
-        onHorizontalDragEnd: (details) {
-          if (details.velocity.pixelsPerSecond.dx > 0) {
+        onTapDown: (TapDownDetails details) {
+          final screenWidth = MediaQuery.of(context).size.width;
+          final tapPosition = details.globalPosition.dx;
+
+          // Check if the swipe velocity is significant enough to be considered a swipe
+
+          if (tapPosition >= screenWidth / 2) {
             // Swiped right
+            print("before call");
+            appState.addLikedVid();
+            print("after call");
             context.read<MyAppState>().simVid();
           } else {
             // Swiped left
+            print("constant swipe left");
             context.read<MyAppState>().randVid();
           }
           _updateVideo();
