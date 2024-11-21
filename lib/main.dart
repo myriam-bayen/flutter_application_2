@@ -247,16 +247,10 @@ class MyAppState extends ChangeNotifier {
         String hrefValue = element.attributes['href'] ?? '';
         String nextLink = "https://tasty.co" + hrefValue;
         print("nextLinkSimilar: " + nextLink);
-        for (var i = 0; i < watched_vids.length; i++) {
-          if (watched_vids[i] == nextLink) {
-            simVid();
-          }
-        }
         fetchPageSource(nextLink);
         return nextLink;
       } else {
         print("No link found.");
-        simVid();
         return "No link found.";
       }
     } else {
@@ -403,13 +397,13 @@ class _MyHomePageState extends State<MyHomePage> {
 
           // Check if the swipe velocity is significant enough to be considered a swipe
 
-          if (tapPosition >= screenWidth / 2) {
+          if (tapPosition >= (screenWidth / 2) + 10) {
             // Swiped right
             print("before call");
             appState.addLikedVid();
             print("after call");
             context.read<MyAppState>().simVid();
-          } else {
+          } else if (tapPosition <= (screenWidth / 2) - 10) {
             // Swiped left
             print("constant swipe left");
             context.read<MyAppState>().randVid();
